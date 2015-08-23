@@ -1,30 +1,6 @@
 #!/bin/sh
 
-ThumbDir=thumbs
-ConvertCmd=convert
-IndexBase=index
-IndexExt=.html
-TopPage=${IndexBase}${IndexExt}
-AllPhotoPage=${IndexBase}All${IndexExt}
-SplitPhotoPage=
-Per=50
-PageNumDate=0
-StatusFile=".status"
-FinishedText="Finished to make thumbs" 
-ThumbOnlyFlag=0
-CheckOnlyFlag=0
-NewOnlyFlag=0
-SearchImgExt='\.jpe?g|\.png'
-SearchMovieExt='\.mpe?g|\.avi|\.mp4'
-OutputImgExt=".JPG"
-AllExt=".*"
-yyyymmdd=`pwd | perl -ne 's#^.*/##; print;'`
-DownloadCGIPath='/home/seiyo/bin/download.cgi'
-ControlPhotoCGIPath='/home/seiyo/bin/controlphoto.cgi'
-JavascriptPath='/home/seiyo/bin/js/album.js'
-UNKNOWN_ICON="/icon/unknown.png"
-CWD=`pwd`
-
+. photoalbum.conf
 
 # mode check
 case $1 in
