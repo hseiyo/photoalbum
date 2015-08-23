@@ -280,9 +280,9 @@ function convert_and_html
 		fi
 	fi
 
-	echo "adding ${File} to html"
-	html_body ${File} ${ThumbFile} >> ${CurPage}
-	html_body ${File} ${ThumbFile} >> ${AllPhotoPage}
+	echo "adding ${FormattedFile} to html"
+	html_body ${FormattedFile} ${ThumbFile} >> ${CurPage}
+	html_body ${FormattedFile} ${ThumbFile} >> ${AllPhotoPage}
 
 }
 
