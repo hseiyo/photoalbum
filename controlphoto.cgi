@@ -6,13 +6,13 @@ use CGI;
 my $query = new CGI;
 
 my $debug_level = 1;
-my $LINK_CMD = "/home/seiyo/bin/makephotolink.sh"; 
-my $BASE_DIR = "/home/seiyo/public_html";
-my $FROM_BASE = "/photo";
-my $DEST_BASE = "/photo/open";
+my $LINK_CMD = "/home/seiyo/bin/makephotolink.sh"; # should read from conf.
+my $BASE_DIR = "/home/seiyo/public_html"; # should read from conf.
+my $FROM_BASE = "/photo"; # should read from conf.
+my $DEST_BASE = "/photo/open"; # should read from conf.
 # my $FROM_DIR = $BASE_DIR . $ENV{REQUEST_URI};
 my $FROM_DIR = $ENV{REQUEST_URI};
-$FROM_DIR =~ s#/photo/open/#/photo/#;
+$FROM_DIR =~ s#/photo/open/#/photo/#; # should read from conf.
 my $DEST_DIR;
 
 sub debug{

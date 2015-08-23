@@ -26,7 +26,7 @@ print $cgi->header(
 # print content of $file
 my $buf = undef;
 my $bufsize = 1034;
-open(FILE, "/home/seiyo/bin/photo/${yyyymmdd}.sh |");
+open(FILE, "/home/seiyo/bin/photo/${yyyymmdd}.sh |"); # should read from conf.
 binmode(FILE);
 binmode(STDOUT);
 while (1) {

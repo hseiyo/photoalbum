@@ -29,7 +29,7 @@ echo "working directory is `pwd`"
 
 echo "making download.cgi"
 ln -sf ${DownloadCGIPath} ${yyyymmdd}.cgi
-ln -sf "/home/seiyo/bin/compress.sh" "/home/seiyo/bin/photo/${yyyymmdd}.sh"
+ln -sf ${COMPRESSSH} ${LINKEDCOMPRESSSH}
 
 echo "making controlphoto.cgi"
 ln -sf ${ControlPhotoCGIPath} .
