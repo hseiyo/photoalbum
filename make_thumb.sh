@@ -1,6 +1,12 @@
 #!/bin/sh
 
-. photoalbum.conf
+function usage
+{
+	echo "usage:"
+	echo "$0 [-check] [-newonly] [-conf path] extension size"
+	echo "extension : extension with period"
+	echo "size : size of x-size"
+}
 
 # mode check
 case $1 in
@@ -12,7 +18,13 @@ case $1 in
 		NewOnlyFlag=1
 		shift
 		;;
+	"-conf")
+		shift
+		ConfPath=$1
+		shift
+		;;
 esac
+
 
 Ext=$1
 XSize=$2
@@ -22,101 +34,94 @@ if [ $# != 2 ]; then
 	exit 1
 fi
 
+. ${ConfPath:=`dirname $0`/photoalbum.conf}
 
 function main
 {
-echo "working directory is `pwd`"
-
-echo "making download.cgi"
-ln -sf ${DownloadCGIPath} ${yyyymmdd}.cgi
-ln -sf ${COMPRESSSH} ${LINKEDCOMPRESSSH}
-
-echo "making controlphoto.cgi"
-ln -sf ${ControlPhotoCGIPath} .
-
-echo "making album.js"
-ln -sf ${JavascriptPath} .
-
-echo "changing mode"
-change_mode
-
-echo "checking the number of files"
-ORGFILENUM=`find -L ${CWD} -type f | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | grep -v "thumb" | wc -l`
-THUMBFILENUM=`find -L ${CWD} -type f | egrep -i "_${XSize}${OutputImgExt}$" | grep "thumb" | wc -l`
-echo " original file: ${ORGFILENUM}"
-echo " thumbnail    : ${THUMBFILENUM}"
-
-if [ ${CheckOnlyFlag} = 1 ]; then
-	echo "checked."
-	exit 0
-fi
-
-if [ ${NewOnlyFlag} = 0 -a ${ORGFILENUM} -ne ${THUMBFILENUM} ];then
+	echo "working directory is `pwd`"
 	
-	if [ -e ${StatusFile} ];then
-		rm -f ${StatusFile}
+	echo "making download.cgi"
+	ln -sf ${DownloadCGIPath} ${yyyymmdd}.cgi
+	ln -sf ${COMPRESSSH} ${LINKEDCOMPRESSSH}
+	
+	echo "making controlphoto.cgi"
+	ln -sf ${ControlPhotoCGIPath} .
+	
+	echo "making album.js"
+	ln -sf ${JavascriptPath} .
+	
+	echo "changing mode"
+	change_mode
+	
+	echo "checking the number of files"
+	ORGFILENUM=`find -L ${CWD} -type f | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | grep -v "thumb" | wc -l`
+	THUMBFILENUM=`find -L ${CWD} -type f | egrep -i "_${XSize}${OutputImgExt}$" | grep "thumb" | wc -l`
+	echo " original file: ${ORGFILENUM}"
+	echo " thumbnail    : ${THUMBFILENUM}"
+
+	if [ ${CheckOnlyFlag} = 1 ]; then
+		echo "checked."
+		exit 0
 	fi
-fi
 
-
-if [ "`cat ${StatusFile}`" = "${FinishedText}" ]; then
-	echo "already finished : skipped."
-	exit 0
-fi
-
-if [ `basename $0` = "mkthumbonly" ]; then
-	ThumbOnlyFlag=1
-fi
-
-if [ ! -h "`dirname $0`/mkthumbonly" ]; then
-	ln -s `basename $0` "`dirname $0`/mkthumbonly"
-fi
-if [ ! -d ${ThumbDir} ]; then
-	mkdir ${ThumbDir}
-fi
-
-html_header > ${TopPage}
-body_all_index >> ${TopPage}
-html_header > ${AllPhotoPage}
-
-INDEXCOUNTDate=0
-INDEXCOUNTUnknown=0
-# convert image files and add entry to index file
-if [ -z "`find -L ${CWD} -name \"${ThumbDir}\" -prune -o -type f -print | egrep -i \"(${SearchImgExt})$\" `" ]; then
-	ThumbOnlyFlag=1
-fi
-
-if [ $ThumbOnlyFlag = 0 ]; then
-	for File in `find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
-	do
-		convert_and_html
-	done
-elif [ ${ThumbOnlyFlag} = 1 ]; then
-	for File in `find -L ${ThumbDir} -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
-	do
-		convert_and_html
-	done
-else
-	echo "ERROR: in here."
-fi
-
-if [ ! -z ${CurPage} ]; then
+	if [ ${NewOnlyFlag} = 0 -a ${ORGFILENUM} -ne ${THUMBFILENUM} ];then
 	
-	html_footer >> ${CurPage}
-fi
-html_footer >> ${TopPage}
-html_footer >> ${AllPhotoPage}
+		if [ -e ${StatusFile} ];then
+			rm -f ${StatusFile}
+		fi
+	fi
 
-echo ${FinishedText} > ${StatusFile}
 
-}
+	if [ "`cat ${StatusFile}`" = "${FinishedText}" ]; then
+		echo "already finished : skipped."
+		exit 0
+	fi
 
-function usage
-{
-	echo "usage:"
-	echo "$0 extension size"
-	echo "extension : extension with period"
-	echo "size : size of x-size"
+	if [ `basename $0` = "mkthumbonly" ]; then
+		ThumbOnlyFlag=1
+	fi
+
+	if [ ! -h "`dirname $0`/mkthumbonly" ]; then
+		ln -s `basename $0` "`dirname $0`/mkthumbonly"
+	fi
+	if [ ! -d ${ThumbDir} ]; then
+		mkdir ${ThumbDir}
+	fi
+
+	html_header > ${TopPage}
+	body_all_index >> ${TopPage}
+	html_header > ${AllPhotoPage}
+
+	INDEXCOUNTDate=0
+	INDEXCOUNTUnknown=0
+	# convert image files and add entry to index file
+	if [ -z "`find -L ${CWD} -name \"${ThumbDir}\" -prune -o -type f -print | egrep -i \"(${SearchImgExt})$\" `" ]; then
+		ThumbOnlyFlag=1
+	fi
+
+	if [ $ThumbOnlyFlag = 0 ]; then
+		for File in `find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
+		do
+			convert_and_html
+		done
+	elif [ ${ThumbOnlyFlag} = 1 ]; then
+		for File in `find -L ${ThumbDir} -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
+		do
+			convert_and_html
+		done
+	else
+		echo "ERROR: in here."
+	fi
+
+	if [ ! -z ${CurPage} ]; then
+	
+		html_footer >> ${CurPage}
+	fi
+	html_footer >> ${TopPage}
+	html_footer >> ${AllPhotoPage}
+
+	echo ${FinishedText} > ${StatusFile}
+
 }
 
 function html_header
@@ -266,6 +271,5 @@ function change_mode
 {
 	chmod -R u+rw,g+r,o+r *
 }
-
 
 main
