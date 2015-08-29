@@ -93,7 +93,7 @@ function main
 		ReadStatusFile
 	fi
 
-	if [ "${Status}" = "${FinishedStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" != "${ThisStrutType}" ] ) ; then
+	if [ "${Status}" = "${FinishedStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
 		echo "already finished : skipped."
 		exit 0
 	fi
@@ -142,7 +142,7 @@ function main
 	html_footer >> ${AllPhotoPage}
 
 	echo "Status: ${FinishedStatus}" > ${StatusFile}
-	echo "StructType: ${StructType}" >> ${StatusFile}
+	echo "StructType: ${ThisStructType}" >> ${StatusFile}
 
 }
 
