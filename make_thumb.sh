@@ -5,6 +5,7 @@ function usage
 	echo "usage:"
 	echo "$0 [-check] extension size"
 	echo "$0 [-newonly] [-conf path] extension size"
+	echo "$0 [-migrate] [-conf path] extension size"
 	echo "extension : extension with period"
 	echo "size : size of x-size"
 }
@@ -26,6 +27,13 @@ do
 			ConfPath=$1
 			shift
 			;;
+		"-migrate")
+			MigrateFlag=1
+			shift
+			;;
+		*)
+			shift
+			;;
 	esac
 done
 
@@ -41,6 +49,7 @@ fi
 
 function main
 {
+
 	echo "working directory is `pwd`"
 	
 	echo "making download.cgi"
@@ -74,8 +83,17 @@ function main
 		fi
 	fi
 
+	# Read Status File
+	Status=
+	StructType=
+	ThisStructType="0.9"
+	local FinishedStatus="Finished"
+	
+	if [ -r ${StatusFile} ]; then
+		ReadStatusFile
+	fi
 
-	if [ "`cat ${StatusFile}`" = "${FinishedText}" ]; then
+	if [ "${Status}" = "${FinishedStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" != "${ThisStrutType}" ] ) ; then
 		echo "already finished : skipped."
 		exit 0
 	fi
@@ -123,8 +141,31 @@ function main
 	html_footer >> ${TopPage}
 	html_footer >> ${AllPhotoPage}
 
-	echo ${FinishedText} > ${StatusFile}
+	echo "Status: ${FinishedStatus}" > ${StatusFile}
+	echo "StructType: ${StructType}" >> ${StatusFile}
 
+}
+
+function ReadStatusFile
+{
+	local line
+	while read line
+	do
+		case "${line%%:*}" in
+			"Status")
+				Status=${line##*: }
+				;;
+			"StructType")
+				StructType=${line##*: }
+				;;
+			"${FinishedText}") # remove after migration from old version
+				Status="Finished"
+				StructType="0.1"
+				;;
+			*)
+				;;
+		esac
+	done < ${StatusFile}
 }
 
 function html_header
