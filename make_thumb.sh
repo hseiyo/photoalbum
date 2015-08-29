@@ -3,28 +3,31 @@
 function usage
 {
 	echo "usage:"
-	echo "$0 [-check] [-newonly] [-conf path] extension size"
+	echo "$0 [-check] extension size"
+	echo "$0 [-newonly] [-conf path] extension size"
 	echo "extension : extension with period"
 	echo "size : size of x-size"
 }
 
 # mode check
-case $1 in
-	"-check")
-		CheckOnlyFlag=1
-		shift
-		;;
-	"-newonly")
-		NewOnlyFlag=1
-		shift
-		;;
-	"-conf")
-		shift
-		ConfPath=$1
-		shift
-		;;
-esac
-
+while [ "$1" != "" -a ${1:0:1} = "-" ]
+do
+	case $1 in
+		"-check")
+			CheckOnlyFlag=1
+			shift
+			;;
+		"-newonly")
+			NewOnlyFlag=1
+			shift
+			;;
+		"-conf")
+			shift
+			ConfPath=$1
+			shift
+			;;
+	esac
+done
 
 Ext=$1
 XSize=$2
@@ -34,7 +37,7 @@ if [ $# != 2 ]; then
 	exit 1
 fi
 
-. ${ConfPath:=`dirname $0`/photoalbum.conf}
+. ${ConfPath:=$(dirname $0)/photoalbum.conf}
 
 function main
 {
