@@ -3,53 +3,49 @@
 function usage
 {
 	echo "usage:"
-	echo "$0 [-check] extension size"
-	echo "$0 [-newonly] [-conf path] extension size"
-	echo "$0 [-migrate] [-conf path] extension size"
-	echo "extension : extension with period"
+	echo "$0 command options"
+	echo "$0 check options size"
+	echo "$0 mkhtml options size"
+	echo "commands are: check, mkhtml"
+	echo "$0 check"
+	echo "$0 mkhtml [-conf file ] [-migrate] size"
 	echo "size : size of x-size"
 }
 
-# mode check
-while [ "$1" != "" -a ${1:0:1} = "-" ]
-do
-	case $1 in
-		"-check")
-			CheckOnlyFlag=1
-			shift
-			;;
-		"-newonly")
-			NewOnlyFlag=1
-			shift
-			;;
-		"-conf")
-			shift
-			ConfPath=$1
-			shift
-			;;
-		"-migrate")
-			MigrateFlag=1
-			shift
-			;;
-		*)
-			shift
-			;;
-	esac
-done
 
-Ext=$1
-XSize=$2
-
-if [ $# != 2 ]; then
-	usage
-	exit 1
-fi
-
-. ${ConfPath:=$(dirname $0)/photoalbum.conf}
-
-function main
+# Sub Functions
+function CheckLinks
 {
+	local rc=0
+	echo "working directory is `pwd`"
+	
+	echo "checking download.cgi"
+	if [ ! -L ${yyyymmdd}.cgi ]; then
+		echo "${yyyymmdd}.cgi is not exist."
+		rc=1
+	fi
+	if [ ! -L ${LINKEDCOMPRESSSH} ]; then
+		echo "${LINKEDCOMPRESSSH} is not exist."
+		rc=1
+	fi
+	
+	echo "checking controlphoto.cgi"
+	if [ ! -L ${CWD}/${ControlPhotoCGIPath##*/} ]; then
+		echo "${CWD}/${ControlPhotoCGIPath##*/} is not exist."
+		rc=1
+	fi
+	
+	echo "checking album.js"
+	if [ ! -L ${CWD}/${JavascriptPath##*/} ]; then
+		echo "${CWD}/${JavascriptPath##*/} is not exist."
+		rc=1
+	fi
 
+	return ${rc}
+}
+	
+function MakeLinks
+{
 	echo "working directory is `pwd`"
 	
 	echo "making download.cgi"
@@ -57,116 +53,60 @@ function main
 	ln -sf ${COMPRESSSH} ${LINKEDCOMPRESSSH}
 	
 	echo "making controlphoto.cgi"
-	ln -sf ${ControlPhotoCGIPath} .
+	ln -sf ${ControlPhotoCGIPath} ${CWD}
 	
 	echo "making album.js"
-	ln -sf ${JavascriptPath} .
+	ln -sf ${JavascriptPath} ${CWD}
 	
-	echo "changing mode"
-	change_mode
-	
+	CheckLinks
+	if [ $? -ne 0 ];then
+		echo "Making links failed."
+	fi
+
+}
+
+function CountFileNum
+{
 	echo "checking the number of files"
-	ORGFILENUM=`find -L ${CWD} -type f | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | grep -v "thumb" | wc -l`
-	THUMBFILENUM=`find -L ${CWD} -type f | egrep -i "_${XSize}${OutputImgExt}$" | grep "thumb" | wc -l`
+	local ORGFILENUM=`find -L ${CWD} -type f | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | grep -v "thumb" | wc -l`
+	local THUMBFILENUM=`find -L ${CWD} -type f | egrep -i "_${XSize}${OutputImgExt}$" | grep "thumb" | wc -l`
 	echo " original file: ${ORGFILENUM}"
 	echo " thumbnail    : ${THUMBFILENUM}"
 
-	if [ ${CheckOnlyFlag} = 1 ]; then
-		echo "checked."
-		exit 0
-	fi
-
-	if [ ${NewOnlyFlag} = 0 -a ${ORGFILENUM} -ne ${THUMBFILENUM} ];then
-	
-		if [ -e ${StatusFile} ];then
-			rm -f ${StatusFile}
-		fi
-	fi
-
-	# Read Status File
-	Status=
-	StructType=
-	ThisStructType="0.9"
-	local FinishedStatus="Finished"
-	
-	if [ -r ${StatusFile} ]; then
-		ReadStatusFile
-	fi
-
-	if [ "${Status}" = "${FinishedStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
-		echo "already finished : skipped."
-		exit 0
-	fi
-
-	if [ `basename $0` = "mkthumbonly" ]; then
-		ThumbOnlyFlag=1
-	fi
-
-	if [ ! -h "`dirname $0`/mkthumbonly" ]; then
-		ln -s `basename $0` "`dirname $0`/mkthumbonly"
-	fi
-	if [ ! -d ${ThumbDir} ]; then
-		mkdir ${ThumbDir}
-	fi
-
-	html_header > ${TopPage}
-	body_all_index >> ${TopPage}
-	html_header > ${AllPhotoPage}
-
-	INDEXCOUNTDate=0
-	INDEXCOUNTUnknown=0
-	# convert image files and add entry to index file
-	if [ -z "`find -L ${CWD} -name \"${ThumbDir}\" -prune -o -type f -print | egrep -i \"(${SearchImgExt})$\" `" ]; then
-		ThumbOnlyFlag=1
-	fi
-
-	if [ $ThumbOnlyFlag = 0 ]; then
-		for File in `find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
-		do
-			convert_and_html
-		done
-	elif [ ${ThumbOnlyFlag} = 1 ]; then
-		for File in `find -L ${ThumbDir} -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
-		do
-			convert_and_html
-		done
+	if [ ${ORGFILENUM} -ne ${THUMBFILENUM} ]; then
+		ThisStatus=${NotFullThumbnailStatus}
+		return 1
 	else
-		echo "ERROR: in here."
+		ThisStatus=${FullThumbnailStatus}
+		return 0
 	fi
-
-	if [ ! -z ${CurPage} ]; then
-	
-		html_footer >> ${CurPage}
-	fi
-	html_footer >> ${TopPage}
-	html_footer >> ${AllPhotoPage}
-
-	echo "Status: ${FinishedStatus}" > ${StatusFile}
-	echo "StructType: ${ThisStructType}" >> ${StatusFile}
 
 }
 
 function ReadStatusFile
 {
-	local line
-	while read line
-	do
-		case "${line%%:*}" in
-			"Status")
-				Status=${line##*: }
-				;;
-			"StructType")
-				StructType=${line##*: }
-				;;
-			"${FinishedText}") # remove after migration from old version
-				Status="Finished"
-				StructType="0.1"
-				;;
-			*)
-				;;
-		esac
-	done < ${StatusFile}
+	if [ -r "${StatusFile}" ]; then
+		local line
+		while read -r line
+		do
+			case "${line%%:*}" in
+				"Status")
+					FileStatus=${line##*: }
+					;;
+				"StructType")
+					FileStructType=${line##*: }
+					;;
+				"${FinishedText}") # remove after migration from old version
+					FileStatus=${FinishedStatus}
+					FileStructType="0.1"
+					;;
+				*)
+					;;
+			esac
+		done < ${StatusFile}
+	fi
 }
+
 
 function html_header
 {
@@ -190,32 +130,10 @@ FOOTER
 
 function html_body
 {
-	case $ThumbOnlyFlag in
-		0)
-			body_thumb_original $*
-			;;
-		1)
-			body_thumb_only $*
-			;;
-		*)
-			body_thumb_original $*
-			;;
-	esac
-}
-
-function body_thumb_original
-{
 	cat <<BODY
 <a href=${1}>
  <img src="${2}"/>
 </a>
-BODY
-}
-
-function body_thumb_only
-{
-	cat <<BODY
- <img src="${1}"/>
 BODY
 }
 
@@ -249,8 +167,7 @@ function get_photo_date
 
 function convert_and_html
 {
-	PhotoDate=`get_photo_date ${File}`
-	
+	local PhotoDate=`get_photo_date ${File}`
 
 	if [ "${PhotoDate}" = "unknown" ]; then
 		if [ ${INDEXCOUNTUnknown} -gt 0 -a "`expr ${INDEXCOUNTUnknown} % ${Per}`" = 0 ]; then
@@ -292,11 +209,11 @@ function convert_and_html
 		INDEXCOUNTDate=`expr $INDEXCOUNTDate + 1`
 	fi
 
-	FormattedFile=${File#${CWD}/}
+	local FormattedFile=${File#${CWD}/}
 	if [ ! -d ${ThumbDir}/${FormattedFile%/*} ]; then
 		mkdir -p ${ThumbDir}/${FormattedFile%/*}
 	fi
-	ThumbFile=${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}
+	local ThumbFile=${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}
 	if [ ${ThumbOnlyFlag} = 0 -a ! -e ${ThumbFile} ]; then
 		echo "converting ${File}"
 		${ConvertCmd} ${File}[0] -scale ${XSize} ${ThumbFile}
@@ -311,9 +228,174 @@ function convert_and_html
 
 }
 
-function change_mode
+function CheckFileMode
 {
-	chmod -R u+rw,g+r,o+r *
+	if [ -n "$(find . -type f -perm 000)" ];then
+		return 1
+	else
+		return 0
+	fi
 }
 
-main
+function ChangeFileMode
+{
+	chmod -R u+rw,g+r,o+r *
+	CheckFileMode
+	return $?
+}
+
+function MkHtml
+{
+	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
+		echo "already finished : skipped."
+		return 0
+	fi
+
+
+	if [ ! -d ${ThumbDir} ]; then
+		mkdir ${ThumbDir}
+	fi
+
+	html_header > ${TopPage}
+	body_all_index >> ${TopPage}
+	html_header > ${AllPhotoPage}
+
+	local INDEXCOUNTDate=0
+	local INDEXCOUNTUnknown=0
+	# convert image files and add entry to index file
+
+	for File in `find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
+	do
+		convert_and_html
+	done
+
+	if [ ! -z ${CurPage} ]; then
+	
+		html_footer >> ${CurPage}
+	fi
+	html_footer >> ${TopPage}
+	html_footer >> ${AllPhotoPage}
+}
+
+
+function Mode
+{
+	# mode check
+	while [ -n "$1" ]
+	do
+		case $1 in
+			"check")
+				shift
+				CheckMode $@
+				exit $?
+				;;
+			"mkhtml")
+				shift
+				MkHtmlMode $@
+				exit $?
+				;;
+
+			*)
+				usage
+				exit 1
+				;;
+		esac
+	done
+}
+
+# Initialize Global Variables
+FileStatus=
+FileStructType=
+ThisStatus=
+ThisStructType="0.9"
+FinishedStatus="Finished"
+NotFullThumbnailStatus="Not Full Thumbnail"
+FullThumbnailStatus="Full Thumbnail"
+
+# Main Functions
+function CheckMode
+{
+	for ARGV in "$@";do 
+		case "${ARGV}" in
+			"-conf"|"-c")
+				shift
+				ConfPath=$1
+				shift
+				;;
+		esac
+	done
+
+	. ${ConfPath:=$(dirname $0)/photoalbum.conf}
+	ReadStatusFile
+
+	if [ $# -ne 0 ]; then
+		usage
+		exit 1
+	fi
+
+	local rc=0
+	CheckLinks
+	rc=`expr $rc + $?`
+
+	CountFileNum
+	rc=`expr $rc + $?`
+
+	CheckFileMode
+	rc=`expr $rc + $?`
+
+	# Write Status
+	echo "Status: ${ThisStatus}" > ${StatusFile}
+	# StructType will not be changed.
+	echo "StructType: ${FileStructType}" >> ${StatusFile}
+
+	return ${rc}
+}
+
+function MkHtmlMode
+{
+	for ARGV in "$@";do 
+		case "${ARGV}" in
+			"-conf"|"-c")
+				shift
+				ConfPath=$1
+				shift
+				;;
+			"-migrate")
+				MigrateFlag=1
+				shift
+				;;
+		esac
+	done
+
+	. ${ConfPath:=$(dirname $0)/photoalbum.conf}
+	ReadStatusFile
+
+	if [ $# -eq 1 ]; then
+		XSize=$1 # Override XSize
+	else
+		usage
+		exit 1
+	fi
+
+	local rc=0
+	MakeLinks
+	rc=`expr $rc + $?`
+
+	CountFileNum
+	rc=`expr $rc + $?`
+
+	ChangeFileMode
+	rc=`expr $rc + $?`
+
+	# Make html files
+	MkHtml
+
+	# Write Status
+	echo "Status: ${FinishedStatus}" > ${StatusFile}
+	echo "StructType: ${ThisStructType}" >> ${StatusFile}
+
+	return ${rc}
+}
+
+Mode $@
+
