@@ -85,6 +85,8 @@ function CountFileNum
 
 function ReadStatusFile
 {
+	local FinishedText="Finished to make thumbs"  # remove after migration from old version.
+
 	if [ -r "${StatusFile}" ]; then
 		local line
 		while read -r line
@@ -167,47 +169,83 @@ function get_photo_date
 
 function convert_and_html
 {
+
+	# unknown date image file
+	# able to get the date of image file
+	local PageNumLocal # is included in filename.
+	local INDEXCOUNTLocal # is number of image files in same date or unknown date.
+
+	# global variables
+	# PageNumUnknown
+	# INDEXCOUNTUnknown
+	# PageNumDate
+	# INDEXCOUNTDate
+	# CurDate 
+
+	# This function is executed for each image file.
 	local PhotoDate=`get_photo_date ${File}`
+	case ${PhotoDate} in
+		"unknown")
+			# initialize by Unknown parameters
+			PageNumLocal=${PageNumUnknown}
+			INDEXCOUNTLocal=${INDEXCOUNTUnknown}
+			;;
+		*)
+			# initialize by Date parameters
+			PageNumLocal=${PageNumDate}
+			INDEXCOUNTLocal=${INDEXCOUNTDate}
+			;;
+	esac
 
-	if [ "${PhotoDate}" = "unknown" ]; then
-		if [ ${INDEXCOUNTUnknown} -gt 0 -a "`expr ${INDEXCOUNTUnknown} % ${Per}`" = 0 ]; then
-			CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumUnknown}`${IndexExt}
-			html_footer >> ${CurPage}
-			PageNumUnknown=${INDEXCOUNTUnknown}
-		fi
-		if [ "`expr ${INDEXCOUNTUnknown} % ${Per}`" = 0 ]; then
-			CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumUnknown}`${IndexExt}
-			body_each_index ${CurPage} >> ${TopPage}
-			html_header > ${CurPage}
-		fi
-		CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumUnknown}`${IndexExt}
-		INDEXCOUNTUnknown=`expr $INDEXCOUNTUnknown + 1`
-	else
-		OldPage=${CurPage}
-		if [ "${PhotoDate}" != "${CurDate}" ]; then
-			INDEXCOUNTDate=0
-			CurDate=${PhotoDate}
-			PageNumDate=${INDEXCOUNTDate}
-			CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumDate}`${IndexExt}
-			body_each_index ${CurPage} >> ${TopPage}
-			html_header > ${CurPage}
+	# keep previous filename of image's page
+	OldPage=${CurPage}
 
-			if [ -e "${OldPage}" ];then
-				html_footer >> ${CurPage}
-			fi
-		elif [ ${INDEXCOUNTDate} -gt 0 -a "`expr ${INDEXCOUNTDate} % ${Per}`" = 0 ]; then
-			PageNumDate=${INDEXCOUNTDate}
-			CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumDate}`${IndexExt}
-			body_each_index ${CurPage} >> ${TopPage}
-			html_header > ${CurPage}
-			if [ -e "${OldPage}" ];then
-				html_footer >> ${CurPage}
-			fi
-		fi
-
-		CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumDate}`${IndexExt}
-		INDEXCOUNTDate=`expr $INDEXCOUNTDate + 1`
+	# different date means new date
+	if [ "${PhotoDate}" != "${CurDate}" ]; then
+		PageNumLocal=0
+		INDEXCOUNTLocal=0
+		CurDate=${PhotoDate}
 	fi
+
+	# for next page
+	if [ ${INDEXCOUNTLocal} -gt 0 -a "`expr ${INDEXCOUNTLocal} % ${Per}`" = 0 ]; then
+		PageNumLocal=${INDEXCOUNTLocal}
+	fi
+
+
+	# initial CurPage
+	CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
+	while [ "${CurPage}" != "${OldPage}" -a -e ${CurPage} ]; do
+		PageNumLocal=`expr ${PageNumLocal} + ${Per}`
+		# next CurPage
+		CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
+	done
+
+	# New Page
+
+	if [ ! -e ${CurPage} ];then
+		# for new page.
+		body_each_index ${CurPage} >> ${TopPage}
+		html_header > ${CurPage}
+
+		if [ -e "${OldPage}" ];then
+			html_footer >> ${OldPage}
+		fi
+	fi
+
+	# Update Global Variables
+	case ${PhotoDate} in
+		"unknown")
+			# initialize by Unknown parameters
+			PageNumUnknown=${PageNumLocal}
+			INDEXCOUNTUnknown=`expr ${INDEXCOUNTLocal} + 1`
+			;;
+		*)
+			# initialize by Date parameters
+			PageNumDate=${PageNumLocal}
+			INDEXCOUNTDate=`expr ${INDEXCOUNTLocal} + 1`
+			;;
+	esac
 
 	local FormattedFile=${File#${CWD}/}
 	if [ ! -d ${ThumbDir}/${FormattedFile%/*} ]; then
@@ -244,13 +282,15 @@ function ChangeFileMode
 	return $?
 }
 
+function RmHtml
+{
+	rm -f *.html
+}
+
 function MkHtml
 {
-	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
-		echo "already finished : skipped."
-		return 0
-	fi
-
+	# Clean files
+	RmHtml
 
 	if [ ! -d ${ThumbDir} ]; then
 		mkdir ${ThumbDir}
@@ -315,7 +355,7 @@ FullThumbnailStatus="Full Thumbnail"
 # Main Functions
 function CheckMode
 {
-	for ARGV in "$@";do 
+	for ARGV in $@;do 
 		case "${ARGV}" in
 			"-conf"|"-c")
 				shift
@@ -360,7 +400,7 @@ function MkHtmlMode
 				ConfPath=$1
 				shift
 				;;
-			"-migrate")
+			"-migrate"|"-m")
 				MigrateFlag=1
 				shift
 				;;
@@ -388,11 +428,19 @@ function MkHtmlMode
 	rc=`expr $rc + $?`
 
 	# Make html files
-	MkHtml
+	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
+		echo "already finished : skipped."
+		# Write Status
+		echo "Status: ${FinishedStatus}" > ${StatusFile}
+		echo "StructType: ${FileStructType}" >> ${StatusFile}
+	else
 
-	# Write Status
-	echo "Status: ${FinishedStatus}" > ${StatusFile}
-	echo "StructType: ${ThisStructType}" >> ${StatusFile}
+		MkHtml
+
+		# Write Status
+		echo "Status: ${FinishedStatus}" > ${StatusFile}
+		echo "StructType: ${ThisStructType}" >> ${StatusFile}
+	fi
 
 	return ${rc}
 }
