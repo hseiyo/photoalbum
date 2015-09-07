@@ -135,6 +135,7 @@ function html_body
 	cat <<BODY
 <a href=${1}>
  <img src="${2}"/>
+${3}
 </a>
 BODY
 }
@@ -167,6 +168,20 @@ function get_photo_date
 	rm tmpfile
 }
 
+function get_photo_time
+{
+	TargetFile=$1
+	strings ${TargetFile} | head -n 20 > tmpfile
+	grep PENTAX tmpfile > /dev/null 2>&1
+	if [ $? = 0 ]; then
+		egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9]' tmpfile | tail -n 1 | awk '{print $2}'
+	else
+		echo ""
+	fi
+	rm tmpfile
+}
+
+
 function convert_and_html
 {
 
@@ -184,6 +199,7 @@ function convert_and_html
 
 	# This function is executed for each image file.
 	local PhotoDate=`get_photo_date ${File}`
+	local PhotoTime=`get_photo_time ${File}`
 	case ${PhotoDate} in
 		"unknown")
 			# initialize by Unknown parameters
@@ -261,8 +277,8 @@ function convert_and_html
 	fi
 
 	echo "adding ${FormattedFile} to html"
-	html_body ${FormattedFile} ${ThumbFile} >> ${CurPage}
-	html_body ${FormattedFile} ${ThumbFile} >> ${AllPhotoPage}
+	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${CurPage}
+	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${AllPhotoPage}
 
 }
 
@@ -428,7 +444,8 @@ function MkHtmlMode
 	rc=`expr $rc + $?`
 
 	# Make html files
-	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] && ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${StructType}" = "${ThisStructType}" ] ) ; then
+	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] \
+			&& ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${FileStructType}" = "${ThisStructType}" ] ) ; then
 		echo "already finished : skipped."
 		# Write Status
 		echo "Status: ${FinishedStatus}" > ${StatusFile}
