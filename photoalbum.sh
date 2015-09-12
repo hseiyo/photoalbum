@@ -14,6 +14,26 @@ function usage
 
 
 # Sub Functions
+function LogMessages
+{
+	local Level
+	local Severity=user
+	case $1 in
+		"Error")
+			Level=err
+			;;
+		"Warn"|"Warning")
+			Level=warning
+			;;
+		*)
+			Level=notice
+			;;
+	esac
+	shift
+	logger -t $(basename $0) -p ${Severity}.${Level} "$*"
+}
+
+
 function CheckLinks
 {
 	local rc=0
@@ -411,6 +431,10 @@ function CheckMode
 	echo "Status: ${ThisStatus}" > ${StatusFile}
 	# StructType will not be changed.
 	echo "StructType: ${FileStructType}" >> ${StatusFile}
+
+	LogMessages notice "${CWD}"
+	LogMessages notice "Status: ${ThisStatus}"
+	LogMessages notice "StructType: ${FileStructType}"
 
 	return ${rc}
 }
