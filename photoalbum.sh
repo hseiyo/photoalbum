@@ -273,7 +273,7 @@ function convert_and_html
 	local ThumbFile09=${FormattedFile##*/}
 	ThumbFile09=${ThumbDir}/${ThumbFile09%${AllExt}}_${XSize}${OutputImgExt}
 	if [ -e "${ThumbFile09}" ]; then
-		mv ${ThumbFIle09} ${ThumbFile}
+		mv ${ThumbFile09} ${ThumbFile}
 	fi
 
 	if [ ${ThumbOnlyFlag} = 0 -a ! -e ${ThumbFile} ]; then
