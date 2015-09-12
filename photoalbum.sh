@@ -278,7 +278,7 @@ function convert_and_html
 
 	echo "adding ${FormattedFile} to html(${CurPage})"
 	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${CurPage}
-	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${AllPhotoPage}
+	html_body ${FormattedFile} ${ThumbFile} "${PhotoDate}_${PhotoTime}" >> ${AllPhotoPage}
 
 }
 
