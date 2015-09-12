@@ -268,6 +268,14 @@ function convert_and_html
 		mkdir -p ${ThumbDir}/${FormattedFile%/*}
 	fi
 	local ThumbFile=${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}
+
+	# for before 0.9
+	local ThumbFile09=${FormattedFile##*/}
+	ThumbFile09=${ThumbDir}/${ThumbFile09%${AllExt}}_${XSize}${OutputImgExt}
+	if [ -e "${ThumbFile09}" ]; then
+		mv ${ThumbFIle09} ${ThumbFile}
+	fi
+
 	if [ ${ThumbOnlyFlag} = 0 -a ! -e ${ThumbFile} ]; then
 		echo "converting ${File}"
 		${ConvertCmd} ${File}[0] -scale ${XSize} ${ThumbFile}
