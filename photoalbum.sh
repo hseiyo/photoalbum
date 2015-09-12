@@ -177,27 +177,29 @@ BODY
 
 function get_photo_date
 {
-	TargetFile=$1
+	local TargetFile=$1
+	local ReturnDate
 	strings ${TargetFile} | head -n 20 > tmpfile
 	grep -e PENTAX -e iPhone tmpfile > /dev/null 2>&1
 	if [ $? = 0 ]; then
-		egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $1}' | tr ':' '_'
-	else
-		echo "unknown"
+		ReturnDate=$(egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $1}' | tr ':' '_')
 	fi
+	echo ${ReturnDate:=unknown}
 	rm tmpfile
 }
 
 function get_photo_time
 {
-	TargetFile=$1
+	local TargetFile=$1
+	local ReturnDate
 	strings ${TargetFile} | head -n 20 > tmpfile
 	grep -e PENTAX -e iPhone tmpfile > /dev/null 2>&1
 	if [ $? = 0 ]; then
-		egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $2}'
+		ReturnDate=$(egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $2}')
 	else
 		echo ""
 	fi
+	echo ${ReturnDate:=}
 	rm tmpfile
 }
 
