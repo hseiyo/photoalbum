@@ -276,7 +276,7 @@ function convert_and_html
 		fi
 	fi
 
-	echo "adding ${FormattedFile} to html"
+	echo "adding ${FormattedFile} to html(${CurPage})"
 	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${CurPage}
 	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${AllPhotoPage}
 
