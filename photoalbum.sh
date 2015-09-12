@@ -159,7 +159,7 @@ function get_photo_date
 {
 	TargetFile=$1
 	strings ${TargetFile} | head -n 20 > tmpfile
-	grep PENTAX tmpfile > /dev/null 2>&1
+	grep -e PENTAX -e iPhone tmpfile > /dev/null 2>&1
 	if [ $? = 0 ]; then
 		egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9]' tmpfile | tail -n 1 | awk '{print $1}' | tr ':' '_'
 	else
@@ -172,7 +172,7 @@ function get_photo_time
 {
 	TargetFile=$1
 	strings ${TargetFile} | head -n 20 > tmpfile
-	grep PENTAX tmpfile > /dev/null 2>&1
+	grep -e PENTAX -e iPhone tmpfile > /dev/null 2>&1
 	if [ $? = 0 ]; then
 		egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9]' tmpfile | tail -n 1 | awk '{print $2}'
 	else
