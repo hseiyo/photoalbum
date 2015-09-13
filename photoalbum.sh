@@ -14,50 +14,64 @@ function usage
 
 
 # Sub Functions
-function LogMessages
+function Messages
 {
-	local Level
+	local Level=info
 	local Severity=user
-	case $1 in
-		"Error")
+	if [ $# -ge 2 ]; then
+		Level=$1
+		shift
+	fi
+	case "${Level}" in
+		"Error"|"err"|"Err")
 			Level=err
 			;;
-		"Warn"|"Warning")
+		"Warn"|"Warning"|"warn")
 			Level=warning
 			;;
+		"Debug"|"debug")
+			Level=debug
+			;;
+		"Info"|"Information"|"info")
+			Level=info
+			;;
 		*)
-			Level=notice
+			Messages "Error" "Unknown level specified: ${Level}"
+			Level=info
 			;;
 	esac
-	shift
-	logger -t $(basename $0) -p ${Severity}.${Level} "$*"
+
+	if [ "${Level}" != "debug" -o "${Debug}" = "on" ]; then
+		echo "[${Level}] $*"
+		logger -t $(basename $0) -p ${Severity}.${Level} "$*"
+	fi
 }
 
 
 function CheckLinks
 {
 	local rc=0
-	echo "working directory is `pwd`"
+	Messages "working directory is ${CWD}"
 	
-	echo "checking download.cgi"
+	Messages "checking download.cgi"
 	if [ ! -L ${yyyymmdd}.cgi ]; then
-		echo "${yyyymmdd}.cgi is not exist."
+		Messages "${yyyymmdd}.cgi is not exist."
 		rc=1
 	fi
 	if [ ! -L ${LINKEDCOMPRESSSH} ]; then
-		echo "${LINKEDCOMPRESSSH} is not exist."
+		Messages "${LINKEDCOMPRESSSH} is not exist."
 		rc=1
 	fi
 	
-	echo "checking controlphoto.cgi"
+	Messages "checking controlphoto.cgi"
 	if [ ! -L ${CWD}/${ControlPhotoCGIPath##*/} ]; then
-		echo "${CWD}/${ControlPhotoCGIPath##*/} is not exist."
+		Messages "${CWD}/${ControlPhotoCGIPath##*/} is not exist."
 		rc=1
 	fi
 	
-	echo "checking album.js"
+	Messages "checking album.js"
 	if [ ! -L ${CWD}/${JavascriptPath##*/} ]; then
-		echo "${CWD}/${JavascriptPath##*/} is not exist."
+		Messages "${CWD}/${JavascriptPath##*/} is not exist."
 		rc=1
 	fi
 
@@ -66,32 +80,32 @@ function CheckLinks
 	
 function MakeLinks
 {
-	echo "working directory is `pwd`"
+	Messages "working directory is ${CWD}"
 	
-	echo "making download.cgi"
+	Messages "making download.cgi"
 	ln -sf ${DownloadCGIPath} ${yyyymmdd}.cgi
 	ln -sf ${COMPRESSSH} ${LINKEDCOMPRESSSH}
 	
-	echo "making controlphoto.cgi"
+	Messages "making controlphoto.cgi"
 	ln -sf ${ControlPhotoCGIPath} ${CWD}
 	
-	echo "making album.js"
+	Messages "making album.js"
 	ln -sf ${JavascriptPath} ${CWD}
 	
 	CheckLinks
 	if [ $? -ne 0 ];then
-		echo "Making links failed."
+		Messages "Making links failed."
 	fi
 
 }
 
 function CountFileNum
 {
-	echo "checking the number of files"
+	Messages "checking the number of files"
 	local ORGFILENUM=`find -L ${CWD} -type f | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | grep -v "thumb" | wc -l`
 	local THUMBFILENUM=`find -L ${CWD} -type f | egrep -i "_${XSize}${OutputImgExt}$" | grep "thumb" | wc -l`
-	echo " original file: ${ORGFILENUM}"
-	echo " thumbnail    : ${THUMBFILENUM}"
+	Messages " original file: ${ORGFILENUM}"
+	Messages " thumbnail    : ${THUMBFILENUM}"
 
 	if [ ${ORGFILENUM} -ne ${THUMBFILENUM} ]; then
 		ThisStatus=${NotFullThumbnailStatus}
@@ -292,14 +306,14 @@ function convert_and_html
 	fi
 
 	if [ ${ThumbOnlyFlag} = 0 -a ! -e ${ThumbFile} ]; then
-		echo "converting ${File}"
+		Messages "converting ${File}"
 		${ConvertCmd} ${File}[0] -scale ${XSize} ${ThumbFile}
 		if [ $? -ne 0 ]; then
 			ThumbFile=${UNKNOWN_ICON}
 		fi
 	fi
 
-	echo "adding ${FormattedFile} to html(${CurPage})"
+	Messages "adding ${FormattedFile} to html(${CurPage})"
 	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${CurPage}
 	html_body ${FormattedFile} ${ThumbFile} "${PhotoDate}_${PhotoTime}" >> ${AllPhotoPage}
 
@@ -427,9 +441,9 @@ function CheckMode
 	# StructType will not be changed.
 	echo "StructType: ${FileStructType}" >> ${StatusFile}
 
-	LogMessages notice "${CWD}"
-	LogMessages notice "Status: ${ThisStatus}"
-	LogMessages notice "StructType: ${FileStructType}"
+	LogMessages "${CWD}"
+	LogMessages "Status: ${ThisStatus}"
+	LogMessages "StructType: ${FileStructType}"
 
 	return ${rc}
 }
@@ -473,7 +487,7 @@ function MkHtmlMode
 	# Make html files
 	if [ "${FileStatus}" = "${FinishedStatus}" ] && [ "${ThisStatus}" = "${FullThumbnailStatus}" ] \
 			&& ( [ "${MigrateFlag}" != "1" ] || [ "${MigrateFlag}" = "1" -a "${FileStructType}" = "${ThisStructType}" ] ) ; then
-		echo "already finished : skipped."
+		Messages "already finished : skipped."
 		# Write Status
 		echo "Status: ${FinishedStatus}" > ${StatusFile}
 		echo "StructType: ${FileStructType}" >> ${StatusFile}
