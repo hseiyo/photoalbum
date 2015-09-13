@@ -386,7 +386,7 @@ function Mode
 FileStatus=
 FileStructType=
 ThisStatus=
-ThisStructType="1.0"
+ThisStructType="1.1"
 FinishedStatus="Finished"
 NotFullThumbnailStatus="Not Full Thumbnail"
 FullThumbnailStatus="Full Thumbnail"
