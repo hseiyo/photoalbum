@@ -286,7 +286,8 @@ function convert_and_html
 	esac
 
 	local FormattedFile=${File#${CWD}/}
-	if [ ! -d ${ThumbDir}/${FormattedFile%/*} ]; then
+	echo ${FormattedFile} | grep -q '/'
+	if [ $? -eq 0 -a ! -d ${ThumbDir}/${FormattedFile%/*} ]; then
 		mkdir -p ${ThumbDir}/${FormattedFile%/*}
 	fi
 	local ThumbFile=${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}
