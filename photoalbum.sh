@@ -141,6 +141,11 @@ function ReadStatusFile
 			esac
 		done < ${StatusFile}
 	fi
+
+	Messages "Read Status as follows:"
+	Messages "Status: ${FileStatus}"
+	Messages "Type: ${FileStructType}"
+
 }
 
 
