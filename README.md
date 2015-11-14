@@ -3,4 +3,4 @@ This is not STABLE!
 Please do not use except for testing this code.
 
 # What is photoalbum ?
-not yet
+photoalbum can make thumbnail image and html files with download function.
