@@ -41,10 +41,11 @@ function Messages
 			;;
 	esac
 
-	if [ "${Level}" != "debug" -o "${Debug}" = "on" ]; then
+	#if [ "${Level}" != "debug" -o "${Debug}" = "on" ]; then
+	if [ "${Debug}" = "on" ]; then
 		echo "[${Level}] $*"
-		logger -t $(basename $0) -p ${Severity}.${Level} "$*"
 	fi
+	logger -t $(basename $0) -p ${Severity}.${Level} "$*"
 }
 
 
@@ -172,7 +173,7 @@ FOOTER
 function html_body
 {
 	cat <<BODY
-<a href=${1}>
+<a href="${1}">
  <img src="${2}"/>
 ${3}
 </a>
@@ -190,15 +191,15 @@ BODY
 function body_each_index
 {
 	cat <<BODY
-<a href=${1}>${1}</a><br/>
+<a href="${1}">${1}</a><br/>
 BODY
 }
 
 function get_photo_date
 {
-	local TargetFile=$1
+	local TargetFile="$1"
 	local ReturnDate
-	strings ${TargetFile} | head -n 30 > tmpfile
+	strings "${TargetFile}" | head -n 30 > tmpfile
 	ReturnDate=$(egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $1}' | tr ':' '_')
 	echo ${ReturnDate:=unknown}
 	rm tmpfile
@@ -206,9 +207,9 @@ function get_photo_date
 
 function get_photo_time
 {
-	local TargetFile=$1
+	local TargetFile="$1"
 	local ReturnDate
-	strings ${TargetFile} | head -n 30 > tmpfile
+	strings "${TargetFile}" | head -n 30 > tmpfile
 	ReturnDate=$(egrep '^2[0-9][0-9][0-9]:[01][0-9]:[0-3][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]' tmpfile | tail -n 1 | awk '{print $2}')
 	echo ${ReturnDate:=}
 	rm tmpfile
@@ -231,8 +232,8 @@ function convert_and_html
 	# CurDate 
 
 	# This function is executed for each image file.
-	local PhotoDate=`get_photo_date ${File}`
-	local PhotoTime=`get_photo_time ${File}`
+	local PhotoDate=`get_photo_date "${File}"`
+	local PhotoTime=`get_photo_time "${File}"`
 	case ${PhotoDate} in
 		"unknown")
 			# initialize by Unknown parameters
@@ -263,11 +264,11 @@ function convert_and_html
 
 
 	# initial CurPage
-	CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
+	CurPage=${IndexBase}_${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
 	while [ "${CurPage}" != "${OldPage}" -a -e ${CurPage} ]; do
 		PageNumLocal=`expr ${PageNumLocal} + ${Per}`
 		# next CurPage
-		CurPage=${IndexBase}${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
+		CurPage=${IndexBase}_${PhotoDate}_`printf "%03d" ${PageNumLocal}`${IndexExt}
 	done
 
 	# New Page
@@ -296,31 +297,31 @@ function convert_and_html
 			;;
 	esac
 
-	local FormattedFile=${File#${CWD}/}
+	local FormattedFile="${File#${CWD}/}"
 	echo ${FormattedFile} | grep -q '/'
 	if [ $? -eq 0 -a ! -d ${ThumbDir}/${FormattedFile%/*} ]; then
 		mkdir -p ${ThumbDir}/${FormattedFile%/*}
 	fi
-	local ThumbFile=${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}
+	local ThumbFile="${ThumbDir}/${FormattedFile%${AllExt}}_${XSize}${OutputImgExt}"
 
 	# for before 0.9
-	local ThumbFile09=${FormattedFile##*/}
-	ThumbFile09=${ThumbDir}/${ThumbFile09%${AllExt}}_${XSize}${OutputImgExt}
+	local ThumbFile09="${FormattedFile##*/}"
+	ThumbFile09="${ThumbDir}/${ThumbFile09%${AllExt}}_${XSize}${OutputImgExt}"
 	if [ -e "${ThumbFile09}" -a "${ThumbFile09}" != "${ThumbFile}" ]; then
-		mv ${ThumbFile09} ${ThumbFile}
+		mv "${ThumbFile09}" "${ThumbFile}"
 	fi
 
-	if [ ${ThumbOnlyFlag} = 0 -a ! -e ${ThumbFile} ]; then
+	if [ ${ThumbOnlyFlag} = 0 -a ! -e "${ThumbFile}" ]; then
 		Messages "converting ${File}"
-		${ConvertCmd} ${File}[0] -scale ${XSize} ${ThumbFile}
+		${ConvertCmd} "${File}[0]" -scale ${XSize} "${ThumbFile}"
 		if [ $? -ne 0 ]; then
 			ThumbFile=${UNKNOWN_ICON}
 		fi
 	fi
 
 	Messages "adding ${FormattedFile} to html(${CurPage})"
-	html_body ${FormattedFile} ${ThumbFile} ${PhotoTime} >> ${CurPage}
-	html_body ${FormattedFile} ${ThumbFile} "${PhotoDate}_${PhotoTime}" >> ${AllPhotoPage}
+	html_body "${FormattedFile}" "${ThumbFile}" ${PhotoTime} >> ${CurPage}
+	html_body "${FormattedFile}" "${ThumbFile}" "${PhotoDate}_${PhotoTime}" >> ${AllPhotoPage}
 
 }
 
@@ -362,7 +363,8 @@ function MkHtml
 	local INDEXCOUNTUnknown=0
 	# convert image files and add entry to index file
 
-	for File in `find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort`
+	find -L ${CWD} -name "${ThumbDir}" -prune -o -type f -print | egrep -i "(${SearchImgExt}|${SearchMovieExt})$" | sort \
+	| while read File
 	do
 		convert_and_html
 	done
@@ -405,7 +407,7 @@ function Mode
 FileStatus=
 FileStructType=
 ThisStatus=
-ThisStructType="1.1"
+ThisStructType="1.2"
 FinishedStatus="Finished"
 NotFullThumbnailStatus="Not Full Thumbnail"
 FullThumbnailStatus="Full Thumbnail"
