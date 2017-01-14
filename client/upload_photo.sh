@@ -38,6 +38,13 @@ do
 	if [ ! -z "${FOURCEFLAG}" -o 0 != "`ssh www.sei-yo.jp \"test -d ${DestDir}/${ALTDestDIR}; echo \\$?\"`" ]; then
 		echo "uploading $d"
 		ssh www.sei-yo.jp "mkdir ${DestDir}/${ALTDestDIR}"
+		cat <<EOF | ssh www.sei-yo.jp "cat ${DestDir}/${ALTDestDIR}/.htaccess"
+AuthType Basic
+AuthName Mountain
+AuthUserFile /home/seiyo/authdir/photo.pw
+AuthGroupFile /home/seiyo/authdir/photo.gr
+Require user init seiyo view
+EOF
 		if [ `basename $0` = ${SHELLNAMEFORTHUM} ]; then
 			scp -r ${d}/thumbs www.sei-yo.jp:${DestDir}/${ALTDestDIR}/thumbs
 		else
