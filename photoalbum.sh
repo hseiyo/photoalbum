@@ -41,11 +41,10 @@ function Messages
 			;;
 	esac
 
-	#if [ "${Level}" != "debug" -o "${Debug}" = "on" ]; then
-	if [ "${Debug}" = "on" ]; then
+	if [ "${Level}" != "debug" -o "${Debug}" = "on" ]; then
 		echo "[${Level}] $*"
+		logger -t $(basename $0) -p ${Severity}.${Level} "$*"
 	fi
-	logger -t $(basename $0) -p ${Severity}.${Level} "$*"
 }
 
 
